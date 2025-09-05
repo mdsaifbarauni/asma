@@ -10,7 +10,7 @@ let particlesArray = [];
 const mouse = {
     x: null,
     y: null,
-    radius: 100 // The area of effect around the mouse/touch
+    radius: 100 // The area of effect around the mouse
 };
 
 // --- Fade out instructions text ---
@@ -19,31 +19,13 @@ setTimeout(() => {
 }, 1000);
 
 
-// --- Handle mouse movement for DESKTOP ---
+// --- Handle mouse movement ---
 window.addEventListener('mousemove', function(event) {
-    mouse.x = event.clientX;
-    mouse.y = event.clientY;
+    mouse.x = event.x;
+    mouse.y = event.y;
 });
 
 window.addEventListener('mouseout', function() {
-    mouse.x = null;
-    mouse.y = null;
-});
-
-// --- UPDATED: Handle touch events for MOBILE ---
-window.addEventListener('touchstart', function(event){
-    mouse.x = event.touches[0].clientX;
-    mouse.y = event.touches[0].clientY;
-});
-
-window.addEventListener('touchmove', function(event) {
-    // prevent default screen scrolling
-    event.preventDefault(); 
-    mouse.x = event.touches[0].clientX;
-    mouse.y = event.touches[0].clientY;
-}, { passive: false }); // Add passive: false to allow preventDefault
-
-window.addEventListener('touchend', function() {
     mouse.x = null;
     mouse.y = null;
 });
@@ -55,29 +37,15 @@ image.onload = function() {
 };
 
 function initialize() {
-    // Make a temporary copy of the canvas with the image to read pixel data
-    let tempCanvas = document.createElement('canvas');
-    let tempCtx = tempCanvas.getContext('2d');
-    tempCanvas.width = image.width;
-    tempCanvas.height = image.height;
-    tempCtx.drawImage(image, 0, 0, image.width, image.height);
-    const imageData = tempCtx.getImageData(0, 0, image.width, image.height);
-    
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    particlesArray = [];
 
-    // --- UPDATED: Dynamic Particle Density for Performance ---
-    let density;
-    if (window.innerWidth < 768) {
-        density = 8; // Less particles on mobile for better performance
-    } else {
-        density = 5; // More particles on desktop
-    }
-    
-    // Calculate scaling and positioning to center the image
-    const scale = Math.min(canvas.width / image.width, canvas.height / image.height);
-    const offsetX = (canvas.width - image.width * scale) / 2;
-    const offsetY = (canvas.height - image.height * scale) / 2;
+    // --- CUSTOMIZE PARTICLE DENSITY HERE ---
+    // A smaller number means MORE particles and better quality, but less performance.
+    // A larger number means FEWER particles, which is better for performance.
+    // Try values between 3 and 10.
+    const density = 5;
 
     for (let y = 0; y < imageData.height; y += density) {
         for (let x = 0; x < imageData.width; x += density) {
@@ -89,10 +57,7 @@ function initialize() {
                 const green = imageData.data[index + 1];
                 const blue = imageData.data[index + 2];
                 const color = `rgb(${red},${green},${blue})`;
-                // Apply scaling and offset to position particles correctly
-                const particleX = offsetX + x * scale;
-                const particleY = offsetY + y * scale;
-                particlesArray.push(new Particle(particleX, particleY, color));
+                particlesArray.push(new Particle(x, y, color));
             }
         }
     }
@@ -125,7 +90,7 @@ class Particle {
     }
 
     update() {
-        // Calculate distance and angle from mouse/touch
+        // Calculate distance and angle from mouse
         let dx = mouse.x - this.x;
         let dy = mouse.y - this.y;
         this.distance = Math.sqrt(dx * dx + dy * dy);
@@ -161,5 +126,6 @@ function animate() {
 window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    particlesArray = []; // Clear old particles
     initialize(); // Re-create particles for the new size
 });
